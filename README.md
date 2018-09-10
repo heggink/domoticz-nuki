@@ -36,9 +36,10 @@ Alternatively, swap the batteries for a (hacked) power supply
 | **Lock device** | For each lock configured in the bridge |
 
 ## To do
-The plugin currently uses s.connect(("192.168.1.1", 80)) and s.getsockname()[0] to get its own IP for the callback url. This will definitely cause problems for those on a 10.XX.XX.XX network adressing. Need to fix this urgently
-Delete the callback on deletion of the device
+1) The plugin currently uses s.connect(("192.168.1.1", 80)) and s.getsockname()[0] to get its own IP for the callback url. This will definitely cause problems for those on a 10.XX.XX.XX network adressing. Need to fix this urgently!
+
+2) Delete the callback on deletion of the device
 Currently, all callbacks need to be removed manually: http://[IP OF THE BRIDGE]:8080/callback/remove?id=[ID CREATED BY THE PLUGIN]&token=[TOKEN]
 Callbacks can be easily listed: http://[IP OF THE BRIDGE]:8080/callback/list?token=[TOKEN]
 # Please note that a max of 3 callbacks is allowed
-This does allow you to install this next to any existing scripts
+This should allow you to install this next to any existing scripts to test
