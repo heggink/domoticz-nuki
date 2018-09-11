@@ -81,7 +81,7 @@ class BasePlugin:
         self.pollInterval = int(Parameters["Mode3"])
 
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("192.168.1.1", 80))
+        s.connect(("8.8.8.8", 80))
         self.myIP = s.getsockname()[0]
         s.close()
         Domoticz.Debug("My IP is " + self.myIP)
