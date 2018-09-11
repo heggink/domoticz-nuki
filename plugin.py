@@ -85,6 +85,7 @@ class BasePlugin:
         self.myIP = s.getsockname()[0]
         s.close()
         Domoticz.Debug("My IP is " + self.myIP)
+	Domoticz.Log("Nuki plugin started on IP " + self.myIP + " and port " + str(self.callbackPort))
 
         req = 'http://' + self.bridgeIP + ':8080/list?token=' + self.bridgeToken
         Domoticz.Debug('REQUESTING ' + req)
@@ -109,7 +110,7 @@ class BasePlugin:
             for i in range (num):
                 if (i+1 not in Devices):
                     Domoticz.Device(Name=resp[i]["name"], Unit=i+1, TypeName="Switch", Switchtype=19, Used=1).Create()
-                    Domoticz.Debug("Lock " + resp[i]["name"] + " created.")
+                    Domoticz.Log("Lock " + resp[i]["name"] + " created.")
                 else:
                     Domoticz.Debug("Lock " + resp[i]["name"] + " already exists.")
 
@@ -161,7 +162,7 @@ class BasePlugin:
             if not found:
 #           create callback for the bridge (all lock changes reported on this callback)
                 callback = 'http://' + self.bridgeIP + ':8080/callback/add?url=http%3A%2F%2F' + self.myIP + '%3A' + self.callbackPort + '&token=' + self.bridgeToken
-                Domoticz.Debug('Installing callback ' + callback)
+                Domoticz.Log('Installing callback ' + callback)
 
                 try:
                     resp = urllib.request.urlopen(callback).read()
@@ -174,7 +175,7 @@ class BasePlugin:
                     Domoticz.Debug("Callback response received " + strData)
                     resp = json.loads(strData)
                     if resp["success"]:
-                        Domoticz.Debug("Nuki Callback install succeeded")
+                        Domoticz.Log("Nuki Callback install succeeded")
                     else:
                         Domoticz.Error("Unable to register NUKI callback")
 
@@ -213,6 +214,7 @@ class BasePlugin:
         else:
             batt = 255
 
+	Domoticz.Log(self.lockNames[foundlock] + " requests update: " + Response["stateName"])
         if (Response["state"] == 1):
             Domoticz.Debug(self.lockNames[foundlock] + " is LOCKED ")
             sval = 'Locked'
@@ -234,7 +236,7 @@ class BasePlugin:
         Domoticz.Debug("onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
         lockid = str(self.lockIds[Unit-1])
         lockname = self.lockNames[Unit-1]
-        Domoticz.Debug("Switch device " + lockid + " with name  " + lockname)
+        Domoticz.Log("Switch device " + lockid + " with name  " + lockname)
 
         if Command == 'On':
             action = 2
@@ -281,7 +283,7 @@ class BasePlugin:
 #	heartbeat is every 10 seconds, pollinterval is in minutes 
         if (self.heartbeats / 6) >= self.pollInterval:
             self.heartbeats = 0
-            Domoticz.Debug("onHeartbeat check locks")
+            Domoticz.Log("onHeartbeat check locks")
             for i in range (self.numLocks):
                 nukiId = self.lockIds[i]
                 req = 'http://' + self.bridgeIP + ':8080/lockState&nukiId=' + str(nukiId) + '&token=' + self.bridgeToken
