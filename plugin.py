@@ -1,8 +1,8 @@
 """
-<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="0.0.1">
+<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="1.0.0">
     <params>
-        <param field="Port" label="Port" width="30px" required="true" default="8008"/>
-        <param field="Mode1" label="Bridge IP" width="150px" required="true" default="http://<bridge ip>/"/>
+        <param field="Port" label="Port" width="75px" required="true" default="8008"/>
+        <param field="Mode1" label="Bridge IP" width="150px" required="true" default="192.168.1.123"/>
         <param field="Mode2" label="Bridge token" width="75px" required="true" default="abcdefgh"/>
         <param field="Mode3" label="Poll interval (m)" width="75px" required="true" default="10"/>
         <param field="Mode6" label="Debug" width="100px">
