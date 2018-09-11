@@ -146,7 +146,7 @@ class BasePlugin:
                 Domoticz.Error('NUKI  URLError Reason: '+ str(e.reason))
             else:
                 strData = resp.decode("utf-8", "ignore")
-                Domoticz.Debug("Lock list received " + strData)
+                Domoticz.Debug("Callback list received " + strData)
                 resp = json.loads(strData)
                 urlNeeded = 'http://' + self.myIP + ':' + self.callbackPort
                 num=len(resp["callbacks"])
@@ -171,7 +171,7 @@ class BasePlugin:
                     Domoticz.Error('NUKI  URLError Reason: '+ str(e.reason))
                 else:
                     strData = resp.decode("utf-8", "ignore")
-                    Domoticz.Debug("Lock list received " + strData)
+                    Domoticz.Debug("Callback response received " + strData)
                     resp = json.loads(strData)
                     if resp["success"]:
                         Domoticz.Debug("Nuki Callback install succeeded")
