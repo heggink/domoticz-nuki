@@ -1,6 +1,9 @@
 # domoticz-nuki
 python plugin for the nuki locks
-## BETA BETA BETA
+
+# Current status
+Tested to work with single lock per bridge and multiple bridges per installation
+
 ## Prerequisites
 This plugin requires python modules json and urllib
 It also requires all the locks to be assigned to the bridge
@@ -36,7 +39,8 @@ Alternatively, swap the batteries for a (hacked) power supply
 | **Lock device** | For each lock configured in the bridge |
 
 ## To do
-1) Delete the callback on deletion of the device
+1) Test multiple locks per bridge (anyone?)
+2) Delete the callback on deletion of the device
 Currently, all callbacks need to be removed manually: http://[IP OF THE BRIDGE]:8080/callback/remove?id=[ID CREATED BY THE PLUGIN]&token=[TOKEN]
 Callbacks can be easily listed: http://[IP OF THE BRIDGE]:8080/callback/list?token=[TOKEN]
 # Please note that a max of 3 callbacks is allowed
