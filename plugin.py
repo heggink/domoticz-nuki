@@ -1,5 +1,5 @@
 """
-<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="1.0.0">
+<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="1.0.1">
     <params>
         <param field="Port" label="Port" width="75px" required="true" default="8008"/>
         <param field="Mode1" label="Bridge IP" width="150px" required="true" default="192.168.1.123"/>
@@ -36,6 +36,9 @@
 #    Hardware needs to be set up per bridge, each bridge can contain multiple locks
 #    setting up the bridge (incl developer mode to use the API assigning tokens and such)
 #    adding lock(s) to the bridge
+#
+# changelog
+#    1.0.1 fixed tab error on line 88
 #
 import Domoticz
 import json
