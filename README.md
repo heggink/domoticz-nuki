@@ -31,7 +31,7 @@ Alternatively, swap the batteries for a (hacked) power supply
 | :--- | :--- |
 | **Port** | free port on your system for the bridge to send status messages to (default 8008) |
 | **Bridge IP** | IP address of the Nuki Bridge |
-| **Bridge token** | Token configired when putting the bridge in developer mode |
+| **Bridge token** | Token configured when putting the bridge in developer mode |
 | **Poll interval in minutes** | Polling time in minutes for the plugin to check lock status |
 ## Devices
 | Name | Description |
