@@ -266,7 +266,8 @@ class BasePlugin:
             resp = json.loads(strData)
             if not resp["success"]:
                 Domoticz.Error("Error switching lockstatus for lock " + lockname)
-        UpdateDevice(Unit, nval, sval, 0)
+	    else:
+                UpdateDevice(Unit, nval, sval, 0)
 
 
     def onDisconnect(self, Connection):
