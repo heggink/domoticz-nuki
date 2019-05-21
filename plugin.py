@@ -1,5 +1,5 @@
 """
-<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="1.0.1">
+<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="1.0.2">
     <params>
         <param field="Port" label="Port" width="75px" required="true" default="8008"/>
         <param field="Mode1" label="Bridge IP" width="150px" required="true" default="192.168.1.123"/>
@@ -39,6 +39,7 @@
 #
 # changelog
 #    1.0.1 fixed tab error on line 88
+#    1.0.2 fixed callback port being ignored
 #
 import Domoticz
 import json
@@ -90,7 +91,7 @@ class BasePlugin:
         Domoticz.Debug("My IP is " + self.myIP)
         Domoticz.Log("Nuki plugin started on IP " + self.myIP + " and port " + str(self.callbackPort))
 
-        req = 'http://' + self.bridgeIP + ':8080/list?token=' + self.bridgeToken
+        req = 'http://' + self.bridgeIP + ':' + self.callbackPort + '/list?token=' + self.bridgeToken
         Domoticz.Debug('REQUESTING ' + req)
 #        resp = urllib.request.urlopen(req).read()
 
@@ -140,7 +141,7 @@ class BasePlugin:
             DumpConfigToLog()
 	
 #           check if callback exists and, if not, create
-            req = 'http://' + self.bridgeIP + ':8080/callback/list&token=' + self.bridgeToken
+            req = 'http://' + self.bridgeIP + ':' + self.callbackPort + '/callback/list&token=' + self.bridgeToken
             Domoticz.Debug('checking callback ' + req)
             try:
                 resp = urllib.request.urlopen(req).read()
@@ -164,7 +165,7 @@ class BasePlugin:
 
             if not found:
 #           create callback for the bridge (all lock changes reported on this callback)
-                callback = 'http://' + self.bridgeIP + ':8080/callback/add?url=http%3A%2F%2F' + self.myIP + '%3A' + self.callbackPort + '&token=' + self.bridgeToken
+                callback = 'http://' + self.bridgeIP + ':' + self.callbackPort + '/callback/add?url=http%3A%2F%2F' + self.myIP + '%3A' + self.callbackPort + '&token=' + self.bridgeToken
                 Domoticz.Log('Installing callback ' + callback)
 
                 try:
@@ -217,7 +218,7 @@ class BasePlugin:
         else:
             batt = 255
 
-	Domoticz.Log(self.lockNames[foundlock] + " requests update: " + Response["stateName"])
+        Domoticz.Log(self.lockNames[foundlock] + " requests update: " + Response["stateName"])
         if (Response["state"] == 1):
             Domoticz.Debug(self.lockNames[foundlock] + " is LOCKED ")
             sval = 'Locked'
