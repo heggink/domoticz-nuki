@@ -91,7 +91,7 @@ class BasePlugin:
         Domoticz.Debug("My IP is " + self.myIP)
         Domoticz.Log("Nuki plugin started on IP " + self.myIP + " and port " + str(self.callbackPort))
 
-        req = 'http://' + self.bridgeIP + ':' + self.callbackPort + '/list?token=' + self.bridgeToken
+        req = 'http://' + self.bridgeIP + ':8080/list?token=' + self.bridgeToken
         Domoticz.Debug('REQUESTING ' + req)
 #        resp = urllib.request.urlopen(req).read()
 
@@ -141,7 +141,7 @@ class BasePlugin:
             DumpConfigToLog()
 	
 #           check if callback exists and, if not, create
-            req = 'http://' + self.bridgeIP + ':' + self.callbackPort + '/callback/list&token=' + self.bridgeToken
+            req = 'http://' + self.bridgeIP + ':8080/callback/list&token=' + self.bridgeToken
             Domoticz.Debug('checking callback ' + req)
             try:
                 resp = urllib.request.urlopen(req).read()
@@ -165,7 +165,7 @@ class BasePlugin:
 
             if not found:
 #           create callback for the bridge (all lock changes reported on this callback)
-                callback = 'http://' + self.bridgeIP + ':' + self.callbackPort + '/callback/add?url=http%3A%2F%2F' + self.myIP + '%3A' + self.callbackPort + '&token=' + self.bridgeToken
+                callback = 'http://' + self.bridgeIP + ':8080/callback/add?url=http%3A%2F%2F' + self.myIP + '%3A' + self.callbackPort + '&token=' + self.bridgeToken
                 Domoticz.Log('Installing callback ' + callback)
 
                 try:
@@ -252,7 +252,7 @@ class BasePlugin:
             nval = 0
 
         Domoticz.Debug('setting action to ' + str(action))
-        req = 'http://' + str(self.bridgeIP) + ':' + self.callbackPort + '/lockAction?nukiId=' + lockid + '&action=' + str(action) + '&token=' + str(self.bridgeToken)
+        req = 'http://' + str(self.bridgeIP) + ':8080/lockAction?nukiId=' + lockid + '&action=' + str(action) + '&token=' + str(self.bridgeToken)
         Domoticz.Debug('Executing lockaction ' + str(req))
         try:
             resp = urllib.request.urlopen(req).read()
@@ -290,7 +290,7 @@ class BasePlugin:
             Domoticz.Log("onHeartbeat check locks")
             for i in range (self.numLocks):
                 nukiId = self.lockIds[i]
-                req = 'http://' + self.bridgeIP + ':' + self.callbackPort + '/lockState&nukiId=' + str(nukiId) + '&token=' + self.bridgeToken
+                req = 'http://' + self.bridgeIP + ':8080/lockState&nukiId=' + str(nukiId) + '&token=' + self.bridgeToken
                 Domoticz.Debug('Checking lockstatus ' + req)
                 try:
                     resp = urllib.request.urlopen(req).read()
