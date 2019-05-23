@@ -85,7 +85,7 @@ class BasePlugin:
         self.bridgeIP = Parameters["Mode1"]
         self.bridgeToken = Parameters["Mode2"]
         self.pollInterval = int(Parameters["Mode3"])
-	sef.bridgePort = Parameters["Mode4"]
+        self.bridgePort = Parameters["Mode4"]
 
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
