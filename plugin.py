@@ -1,5 +1,5 @@
 """
-<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="1.0.3">
+<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="1.0.4">
     <params>
         <param field="Port" label="Port" width="75px" required="true" default="8008"/>
         <param field="Mode1" label="Bridge IP" width="150px" required="true" default="192.168.1.123"/>
@@ -41,6 +41,7 @@
 # changelog
 #    1.0.1 fixed tab error on line 88
 #    1.0.3 added bridge port 
+#    1.0.4 multiple small fixes as per giejay's fork
 #
 import Domoticz
 import json
@@ -132,6 +133,9 @@ class BasePlugin:
                 else:
                     batt = 255
 
+                nval = -1
+                sval = "Unknown"
+                
                 if (resp[i]["lastKnownState"]["state"] == 1):
                     sval = 'Locked'
                     nval = 1
@@ -144,8 +148,10 @@ class BasePlugin:
             DumpConfigToLog()
 	
 #           check if callback exists and, if not, create
-            req = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/callback/list&token=' + self.bridgeToken
+            req = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/callback/list?token=' + self.bridgeToken
             Domoticz.Debug('checking callback ' + req)
+            found = False
+        
             try:
                 resp = urllib.request.urlopen(req).read()
             except HTTPError as e:
@@ -159,7 +165,6 @@ class BasePlugin:
                 urlNeeded = 'http://' + self.myIP + ':' + self.callbackPort
                 num=len(resp["callbacks"])
                 Domoticz.Debug("Found callbacks: " + str(num))
-                found = False
                 if num > 0:
                     for i in range (num):
                         if resp["callbacks"][i]["url"] == urlNeeded:
@@ -192,7 +197,6 @@ class BasePlugin:
                 self.httpServerConn.Listen()
 
             Domoticz.Debug("Leaving on start")
-
 
     def onConnect(self, Connection, Status, Description):
         if (Status == 0):
@@ -271,7 +275,6 @@ class BasePlugin:
                 Domoticz.Error("Error switching lockstatus for lock " + lockname)
 	    else:
                 UpdateDevice(Unit, nval, sval, 0)
-
 
     def onDisconnect(self, Connection):
         Domoticz.Debug("onDisconnect called for connection '" + Connection.Name + "'.")
