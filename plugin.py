@@ -1,5 +1,5 @@
 """
-<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="1.0.4">
+<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="1.0.5">
     <params>
         <param field="Port" label="Port" width="75px" required="true" default="8008"/>
         <param field="Mode1" label="Bridge IP" width="150px" required="true" default="192.168.1.123"/>
@@ -42,6 +42,7 @@
 #    1.0.1 fixed tab error on line 88
 #    1.0.3 added bridge port 
 #    1.0.4 multiple small fixes as per giejay's fork
+#    1.0.5 catching success = false onheartbeat
 #
 import Domoticz
 import json
@@ -310,28 +311,30 @@ class BasePlugin:
                     Domoticz.Debug("Lock status received " + strData)
                     resp = json.loads(strData)
 
-                    if (resp["batteryCritical"]):
-                        batt = 10
-                    else:
-                        batt = 255
+                    if (resp["success"]):
+                        if (resp["batteryCritical"]):
+                            batt = 10
+                        else:
+                            batt = 255
 
-                    if (resp["state"] == 1):
-                        Domoticz.Debug(self.lockNames[i] + " is LOCKED ")
-                        sval = 'Locked'
-                        nval = 1
-                        UpdateDevice(i + 1, nval, sval, batt)
-                    elif (resp["state"] == 3):
-                        Domoticz.Debug(self.lockNames[i] + " is UNLOCKED ")
-                        sval = 'Unlocked'
-                        nval = 0
-                        UpdateDevice(i + 1, nval, sval, batt)
-                    elif (resp["state"] == 0):
-                        Domoticz.Error("Nuki lock" + self.lockNames[i] + " UNCALIBRATED ")
-                    elif (resp["state"] == 254):
-                        Domoticz.Error("Nuki lock" + self.lockNames[i] + " MOTOR BLOCKED ")
+                        if (resp["state"] == 1):
+                            Domoticz.Debug(self.lockNames[i] + " is LOCKED ")
+                            sval = 'Locked'
+                            nval = 1
+                            UpdateDevice(i + 1, nval, sval, batt)
+                        elif (resp["state"] == 3):
+                            Domoticz.Debug(self.lockNames[i] + " is UNLOCKED ")
+                            sval = 'Unlocked'
+                            nval = 0
+                            UpdateDevice(i + 1, nval, sval, batt)
+                        elif (resp["state"] == 0):
+                            Domoticz.Error("Nuki lock" + self.lockNames[i] + " UNCALIBRATED ")
+                        elif (resp["state"] == 254):
+                            Domoticz.Error("Nuki lock" + self.lockNames[i] + " MOTOR BLOCKED ")
+                        else:
+                            Domoticz.Log("Nuki lock temporary state ignored" + resp["stateName"])
                     else:
-                        Domoticz.Log("Nuki lock temporary state ignored" + resp["stateName"])
-
+                        Domoticz.Log("Nuki lock false response received")
 
 global _plugin
 _plugin = BasePlugin()
