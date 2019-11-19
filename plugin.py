@@ -159,6 +159,8 @@ class BasePlugin:
                 Domoticz.Error('NUKI HTTPError code: '+ str(e.code))
             except URLError as e:
                 Domoticz.Error('NUKI  URLError Reason: '+ str(e.reason))
+            except HTTPException as e:
+                Domoticz.Error('NUKI  URLError Reason: '+ str(e.reason))
             else:
                 strData = resp.decode("utf-8", "ignore")
                 Domoticz.Debug("Callback list received " + strData)
