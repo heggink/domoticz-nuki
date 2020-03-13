@@ -1,5 +1,5 @@
 """
-<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="1.0.5">
+<plugin key="NukiLock" name="Nuki Lock Plugin" author="heggink" version="1.0.6">
     <params>
         <param field="Port" label="Port" width="75px" required="true" default="8008"/>
         <param field="Mode1" label="Bridge IP" width="150px" required="true" default="192.168.1.123"/>
@@ -43,6 +43,7 @@
 #    1.0.3 added bridge port 
 #    1.0.4 multiple small fixes as per giejay's fork
 #    1.0.5 catching success = false onheartbeat
+#    1.0.6 add unlatch button
 #
 import Domoticz
 import json
@@ -145,6 +146,14 @@ class BasePlugin:
                     nval = 0
                 Devices[i+1].Update(nValue=nval, sValue=str(sval), Description=str(resp[i]["nukiId"]), BatteryLevel=batt)
 
+#           create unlatch device for every listed lock
+            for i in range(num):
+                if ((2 * (i + 1)) not in Devices):
+                    Domoticz.Device(Name=resp[i]["name"]+"Unlatch", Unit=2*(i+1), TypeName="Switch", Switchtype=9, Used=1).Create()
+                    Domoticz.Log("Unlatch for Lock " + resp[i]["name"] + " created.")
+                else:
+                    Domoticz.Debug("Unlatch for Lock " + resp[i]["name"] + " already exists.")
+                                
             Domoticz.Debug("Lock(s) created")
             DumpConfigToLog()
 	
@@ -248,18 +257,28 @@ class BasePlugin:
 
     def onCommand(self, Unit, Command, Level, Hue):
         Domoticz.Debug("onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
-        lockid = str(self.lockIds[Unit-1])
-        lockname = self.lockNames[Unit-1]
-        Domoticz.Log("Switch device " + lockid + " with name  " + lockname)
-
-        if Command == 'On':
-            action = 2
+        
+        #       test if this is the unlatch device or a lock itself. Unlatch devices are numbered after the locks
+        if Unit > self.numLocks:
+            lockid = str(self.lockIds[Unit-1-self.numLocks])
+            lockname = self.lockNames[Unit-1-self.numLocks]
+            action = 3
             sval = 'Locked'
             nval = 1
         else:
-            action = 1
-            sval = 'Unlocked'
-            nval = 0
+            lockid = str(self.lockIds[Unit-1])
+            lockname = self.lockNames[Unit-1]
+
+            if Command == 'On':
+                action = 2
+                sval = 'Locked'
+                nval = 1
+            else:
+                action = 1
+                sval = 'Unlocked'
+                nval = 0
+        
+        Domoticz.Log("Switch device " + lockid + " with name  " + lockname)
 
         Domoticz.Debug('setting action to ' + str(action))
         req = 'http://' + str(self.bridgeIP) + ':' + self.bridgePort + '/lockAction?nukiId=' + lockid + '&action=' + str(action) + '&token=' + str(self.bridgeToken)
@@ -277,7 +296,8 @@ class BasePlugin:
             if not resp["success"]:
                 Domoticz.Error("Error switching lockstatus for lock " + lockname)
             else:
-                UpdateDevice(Unit, nval, sval, 0)
+                if Unit <= self.numLocks:
+                    UpdateDevice(Unit, nval, sval, 0)
 
     def onDisconnect(self, Connection):
         Domoticz.Debug("onDisconnect called for connection '" + Connection.Name + "'.")
