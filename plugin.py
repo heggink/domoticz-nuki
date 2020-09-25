@@ -5,7 +5,7 @@
         <param field="Mode1" label="Bridge IP" width="150px" required="true" default="192.168.1.123"/>
         <param field="Mode2" label="Bridge token" width="75px" required="true" default="abcdefgh"/>
         <param field="Mode4" label="Bridge port" width="75px" required="true" default="8080"/>
-        <param field="Mode3" label="Poll interval (m)" width="75px" required="true" default="10"/>	
+        <param field="Mode3" label="Poll interval (m)" width="75px" required="true" default="10"/>    
         <param field="Mode6" label="Debug" width="100px">
             <options>
                 <option label="True" value="Debug"/>
@@ -44,6 +44,7 @@
 #    1.0.4 multiple small fixes as per giejay's fork
 #    1.0.5 catching success = false onheartbeat
 #    1.0.6 add unlatch button
+#    1.0.7 add sensor and fix unlatch IDs
 #
 import Domoticz
 import json
@@ -99,7 +100,6 @@ class BasePlugin:
 
         req = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/list?token=' + self.bridgeToken
         Domoticz.Debug('REQUESTING ' + req)
-#        resp = urllib.request.urlopen(req).read()
 
         try:
             resp = urllib.request.urlopen(req).read()
@@ -115,8 +115,8 @@ class BasePlugin:
             Domoticz.Debug("I count " + str(num) + " locks")
             self.numLocks = num
 
-#	    create a lock device for every listed lock
-#	    and update the lock state and battery immediately as listed in the response
+#        create a lock device for every listed lock
+#        and update the lock state and battery immediately as listed in the response
             for i in range (num):
                 if (i+1 not in Devices):
                     Domoticz.Device(Name=resp[i]["name"], Unit=i+1, TypeName="Switch", Switchtype=19, Used=1).Create()
@@ -129,7 +129,7 @@ class BasePlugin:
                 Domoticz.Debug("Lock batt " + str(resp[i]["lastKnownState"]["batteryCritical"]))
                 Domoticz.Debug("Lock stateName " + resp[i]["lastKnownState"]["stateName"])
                 Domoticz.Debug("Lock state " + str(resp[i]["lastKnownState"]["state"]))
-		
+        
                 if (resp[i]["lastKnownState"]["batteryCritical"]):
                     batt = 0
                 else:
@@ -148,15 +148,36 @@ class BasePlugin:
 
 #           create unlatch device for every listed lock
             for i in range(num):
-                if ((2 * (i + 1)) not in Devices):
-                    Domoticz.Device(Name=resp[i]["name"]+"Unlatch", Unit=2*(i+1), TypeName="Switch", Switchtype=9, Used=1).Create()
+                if (((i + 101)) not in Devices):
+                    Domoticz.Device(Name=resp[i]["name"]+" Unlatch", Unit=(i+101), TypeName="Switch", Switchtype=9, Used=1).Create()
                     Domoticz.Log("Unlatch for Lock " + resp[i]["name"] + " created.")
                 else:
                     Domoticz.Debug("Unlatch for Lock " + resp[i]["name"] + " already exists.")
+
+#            create door sensor device for every lock if needed
+            for i in range(num):
+                if(resp[i]["deviceType"]==0):
+                    if (((i + 201)) not in Devices):
+                        Domoticz.Device(Name=resp[i]["name"]+" Sensor", Unit=(i+201), TypeName="Switch", Switchtype=11, Used=1).Create()
+                        Domoticz.Log("Sensor for Lock " + resp[i]["name"] + " created.")
+                    else:
+                        Domoticz.Debug("Sensor for Lock " + resp[i]["name"] + " already exists.")
+                    
+                if("doorsensorState" in resp[i]["lastKnownState"]):
+                    Domoticz.Debug("Lock sensor state " + str(resp[i]["lastKnownState"]["doorsensorState"]))
+                    Domoticz.Debug("Lock sensor state name " + str(resp[i]["lastKnownState"]["doorsensorStateName"]))
+                    if (resp[i]["lastKnownState"]["doorsensorState"] == 2):
+                        sval = 'Closed'
+                        nval = 0
+                        UpdateDevice(i + 201, nval, sval, batt)
+                    elif (resp[i]["lastKnownState"]["doorsensorState"] == 3):
+                        sval = 'Open'
+                        nval = 1
+                        UpdateDevice(i + 201, nval, sval, batt)
                                 
             Domoticz.Debug("Lock(s) created")
             DumpConfigToLog()
-	
+    
 #           check if callback exists and, if not, create
             req = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/callback/list?token=' + self.bridgeToken
             Domoticz.Debug('checking callback ' + req)
@@ -203,7 +224,7 @@ class BasePlugin:
                     else:
                         Domoticz.Error("Unable to register NUKI callback")
 
-#	    now listen on the port for any state changes
+#        now listen on the port for any state changes
             else:
                 self.httpServerConn = Domoticz.Connection(Name="Server Connection", Transport="TCP/IP", Protocol="HTML", Port=Parameters["Port"])
                 self.httpServerConn.Listen()
@@ -255,13 +276,24 @@ class BasePlugin:
         else:
             Domoticz.Log("Nuki lock temporary state ignored" + Response["stateName"])
 
+        if("doorsensorState" in Response):
+                    if(Response["doorsensorState"]==2):
+                        sval = 'Closed'
+                        nval = 0
+                        UpdateDevice(foundlock + 201, nval, sval, batt)
+                    elif (Response["doorsensorState"] == 3):
+                        sval = 'Open'
+                        nval = 1
+                        UpdateDevice(foundlock + 201, nval, sval, batt)
+
     def onCommand(self, Unit, Command, Level, Hue):
         Domoticz.Debug("onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
         
         #       test if this is the unlatch device or a lock itself. Unlatch devices are numbered after the locks
-        if Unit > self.numLocks:
-            lockid = str(self.lockIds[Unit-1-self.numLocks])
-            lockname = self.lockNames[Unit-1-self.numLocks]
+        #       Unit > 200 is omitted for sensors as in Domoticz they cannot be actionned
+        if Unit > 100:
+            lockid = str(self.lockIds[Unit-1-100])
+            lockname = self.lockNames[Unit-1-100]
             action = 3
             sval = 'Locked'
             nval = 1
@@ -314,7 +346,7 @@ class BasePlugin:
         #    change the lock status
         self.heartbeats += 1
         Domoticz.Debug("onHeartbeat called " + str(self.heartbeats))
-#	heartbeat is every 10 seconds, pollinterval is in minutes 
+#    heartbeat is every 10 seconds, pollinterval is in minutes 
         if (self.heartbeats / 6) >= self.pollInterval:
             self.heartbeats = 0
             Domoticz.Log("onHeartbeat check locks")
@@ -355,6 +387,16 @@ class BasePlugin:
                             Domoticz.Error("Nuki lock" + self.lockNames[i] + " MOTOR BLOCKED ")
                         else:
                             Domoticz.Log("Nuki lock temporary state ignored" + resp["stateName"])
+
+                        if("doorsensorState" in resp):
+                                if(resp["doorsensorState"]==2):
+                                        sval = 'Closed'
+                                        nval = 0
+                                        UpdateDevice(i + 201, nval, sval, batt)
+                                elif (resp["doorsensorState"]):
+                                        sval = 'Open'
+                                        nval = 1
+                                        UpdateDevice(i + 201, nval, sval, batt)
                     else:
                         Domoticz.Log("Nuki lock false response received")
 
