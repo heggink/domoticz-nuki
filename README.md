@@ -5,7 +5,8 @@ python plugin for the nuki locks
 Tested to work with single lock per bridge and multiple bridges per installation
 
 ## Prerequisites
-This plugin requires python modules json and urllib
+This plugin requires python modules json and urllib.
+random, hashlib, datetime modules are needed if you intend to use Hashed tokens
 It also requires all the locks to be assigned to the bridge
 and for the bridge to be put in developer mode in order to use the HTTP API
 
