@@ -285,6 +285,8 @@ class BasePlugin:
                         sval = 'Open'
                         nval = 1
                         UpdateDevice(foundlock + 201, nval, sval, batt)
+                    elif (Response["doorsensorState"]!=1):
+                        Domoticz.Error("Nuki Door sensor state " + self.lockNames[foundlock] + " UNKNOWN or CALIBRATING")
 
     def onCommand(self, Unit, Command, Level, Hue):
         Domoticz.Debug("onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
@@ -393,10 +395,12 @@ class BasePlugin:
                                         sval = 'Closed'
                                         nval = 0
                                         UpdateDevice(i + 201, nval, sval, batt)
-                                elif (resp["doorsensorState"]):
+                                elif (resp["doorsensorState"]==3):
                                         sval = 'Open'
                                         nval = 1
                                         UpdateDevice(i + 201, nval, sval, batt)
+                                elif (resp["doorsensorState"]!=1):
+                                    Domoticz.Error("Nuki Door sensor state " + self.lockNames[i] + " UNKNOWN or CALIBRATING")
                     else:
                         Domoticz.Log("Nuki lock false response received")
 
