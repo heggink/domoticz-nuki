@@ -6,6 +6,12 @@
         <param field="Mode2" label="Bridge token" width="75px" required="true" default="abcdefgh"/>
         <param field="Mode4" label="Bridge port" width="75px" required="true" default="8080"/>
         <param field="Mode3" label="Poll interval (m)" width="75px" required="true" default="10"/>	
+        <param field="Mode5" label="Token Mode" width="75px">
+           <options>
+               <option label="Hashed" value="Hashed" />
+               <option label="Plain" value="Plain" default="true"/>
+           </options>
+        </param>
         <param field="Mode6" label="Debug" width="100px">
             <options>
                 <option label="True" value="Debug"/>
@@ -45,6 +51,7 @@
 #    1.0.5 catching success = false onheartbeat
 #    1.0.6 add unlatch button
 #
+#    1.0.7 enable Hashed tokens
 import Domoticz
 import json
 import sys
@@ -52,6 +59,14 @@ import socket
 import urllib.request
 import urllib.error
 from urllib.error import URLError, HTTPError
+
+nukiHashDisabled = False
+try:
+    from random import randrange
+    from hashlib import sha256
+    from datetime import datetime
+except:
+    nukiHashDisabled = True
 
 class BasePlugin:
     enabled = False
@@ -64,6 +79,7 @@ class BasePlugin:
     bridgeToken = ' '
     callbackPort = 0
     bridgePort = 0
+    hashedToken = False
     myIP = ' '
     numLocks = 0
     lockNames = []
@@ -73,6 +89,18 @@ class BasePlugin:
 
     def __init__(self):
         return
+
+    def generateTokenString(self):
+        tokenStr=""
+        if self.hashedToken:
+            ts = datetime.utcnow().isoformat(timespec='seconds')+'Z'
+            rnr = randrange(65535)
+            hashnum = sha256(str('{},{},{}').format(ts,rnr,self.bridgeToken).encode('utf-8')).hexdigest()
+            tokenStr=str('ts={}&rnr={}&hash={}').format(ts,rnr,hashnum)
+        else:
+            tokenStr=str('token=')+self.bridgeToken
+        return tokenStr
+
 
 #   on startup:
 #   determine how many locks configured in the bridge
@@ -89,6 +117,10 @@ class BasePlugin:
         self.bridgeToken = Parameters["Mode2"]
         self.pollInterval = int(Parameters["Mode3"])
         self.bridgePort = Parameters["Mode4"]
+        self.hashedToken = bool(Parameters["Mode5"] == "Hashed")
+        if (nukiHashDisabled and self.hashedToken ):
+            self.hashedToken = False
+            Domoticz.Error('Missing imports for Hashed token generation - Fallbacking to Plaintext')
 
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -97,7 +129,7 @@ class BasePlugin:
         Domoticz.Debug("My IP is " + self.myIP)
         Domoticz.Log("Nuki plugin started on IP " + self.myIP + " and port " + str(self.callbackPort))
 
-        req = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/list?token=' + self.bridgeToken
+        req = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/list?' + self.generateTokenString()
         Domoticz.Debug('REQUESTING ' + req)
 #        resp = urllib.request.urlopen(req).read()
 
@@ -158,7 +190,7 @@ class BasePlugin:
             DumpConfigToLog()
 	
 #           check if callback exists and, if not, create
-            req = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/callback/list?token=' + self.bridgeToken
+            req = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/callback/list?' + self.generateTokenString()
             Domoticz.Debug('checking callback ' + req)
             found = False
         
@@ -185,7 +217,7 @@ class BasePlugin:
 
             if not found:
 #           create callback for the bridge (all lock changes reported on this callback)
-                callback = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/callback/add?url=http%3A%2F%2F' + self.myIP + '%3A' + self.callbackPort + '&token=' + self.bridgeToken
+                callback = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/callback/add?'+self.generateTokenString()+'&url=http%3A%2F%2F' + self.myIP + '%3A' + self.callbackPort
                 Domoticz.Log('Installing callback ' + callback)
 
                 try:
@@ -209,6 +241,10 @@ class BasePlugin:
                 self.httpServerConn.Listen()
 
             Domoticz.Debug("Leaving on start")
+
+    def onStop(self):
+        del self.httpServerConn
+
 
     def onConnect(self, Connection, Status, Description):
         if (Status == 0):
@@ -281,7 +317,7 @@ class BasePlugin:
         Domoticz.Log("Switch device " + lockid + " with name  " + lockname)
 
         Domoticz.Debug('setting action to ' + str(action))
-        req = 'http://' + str(self.bridgeIP) + ':' + self.bridgePort + '/lockAction?nukiId=' + lockid + '&action=' + str(action) + '&token=' + str(self.bridgeToken)
+        req = 'http://' + str(self.bridgeIP) + ':' + self.bridgePort + '/lockAction?'+self.generateTokenString()+'&nukiId=' + lockid + '&action=' + str(action)
         Domoticz.Debug('Executing lockaction ' + str(req))
         try:
             resp = urllib.request.urlopen(req).read()
@@ -320,7 +356,7 @@ class BasePlugin:
             Domoticz.Log("onHeartbeat check locks")
             for i in range (self.numLocks):
                 nukiId = self.lockIds[i]
-                req = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/lockState&nukiId=' + str(nukiId) + '&token=' + self.bridgeToken
+                req = 'http://' + self.bridgeIP + ':' + self.bridgePort + '/lockState?'+self.generateTokenString()+'&nukiId=' + str(nukiId)
                 Domoticz.Debug('Checking lockstatus ' + req)
                 try:
                     resp = urllib.request.urlopen(req).read()
@@ -366,6 +402,9 @@ def onStart():
     global _plugin
     _plugin.onStart()
 
+def onStop():
+    global _plugin
+    _plugin.onStop()
 
 def onConnect(Connection, Status, Description):
     global _plugin
